@@ -1,5 +1,6 @@
 module ray_optics_intersection_and_reflection
    use common_precision, only: dp
+   use ray_optics_vector_2d, only: ray_t
 
    implicit none(type, external)
 
@@ -28,6 +29,17 @@ contains
       real(dp) :: n
       n = sqrt(ax*ax + ay*ay)
    end function norm
+
+   pure function ray_type_segment_intersection( &
+      ray_0, x1, y1, x2, y2, tmin, tmax, eps) result(t)
+      type(ray_t), intent(in) :: ray_0
+      real(dp), intent(in) :: x1, y1, x2, y2
+      real(dp), intent(in) :: tmin, tmax, eps
+      real(dp) :: t
+
+      t = ray_segment_intersection(ray_0%x0, ray_0%y0, ray_0%dx, ray_0%dy, &
+                                   x1, y1, x2, y2, tmin, tmax, eps)
+   end function ray_type_segment_intersection
 
    ! Ray vs. line segment intersection
    ! Ray: P(t) = (x0, y0) + t*(dx, dy), t in [tmin, tmax]

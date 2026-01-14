@@ -4,6 +4,15 @@ module ray_optics_vector_2d
    implicit none(type, external)
 
    private
+   public :: ray_t
+
+   !! Create ray data type
+   type :: ray_t
+      real(dp) :: x
+      real(dp) :: dx
+      real(dp) :: y
+      real(dp) :: dy
+   end type ray_t
 contains
 
 end module ray_optics_vector_2d
