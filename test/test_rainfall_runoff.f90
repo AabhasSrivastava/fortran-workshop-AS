@@ -18,8 +18,42 @@ module test_rainfall_runoff
    private
 
    public :: collect_tests
+   public :: setup_test_paths
+
+   ! Test configuration - paths for executable and files
+   character(len=:), allocatable :: executable_path
+   character(len=:), allocatable :: input_file_path
+   character(len=:), allocatable :: output_file_path
 
 contains
+
+   !> Setup test paths for executable and data files
+   subroutine setup_test_paths(exec_path, input_path, output_path)
+      character(len=*), intent(in), optional :: exec_path
+      character(len=*), intent(in), optional :: input_path
+      character(len=*), intent(in), optional :: output_path
+
+      ! Set executable path (with platform-specific defaults)
+      if (present(exec_path)) then
+         executable_path = exec_path
+      else
+         executable_path = 'rainfall_runoff_demo.exe'
+      end if
+
+      ! Set input file path
+      if (present(input_path)) then
+         input_file_path = input_path
+      else
+         input_file_path = 'input.csv'
+      end if
+
+      ! Set output file path
+      if (present(output_path)) then
+         output_file_path = output_path
+      else
+         output_file_path = 'output.csv'
+      end if
+   end subroutine setup_test_paths
 
    subroutine collect_tests(testsuite)
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
@@ -30,6 +64,33 @@ contains
                   ]
    end subroutine collect_tests
 
+   subroutine run_rainfall_runoff_executable(error)
+      type(error_type), allocatable, intent(out) :: error
+      integer :: exit_status
+      logical :: wait_for_completion
+      character(len=:), allocatable :: command
+
+      ! Initialize paths if not already set
+      if (.not. allocated(executable_path)) then
+         call setup_test_paths()
+      end if
+
+      ! Build command line
+      command = trim(executable_path)//' '//trim(input_file_path)//' '//trim(output_file_path)
+
+      ! Execute the rainfall_runoff_demo executable
+      wait_for_completion = .true.
+      call execute_command_line(command, &
+                                wait=wait_for_completion, &
+                                exitstat=exit_status)
+
+      if (exit_status /= 0) then
+         call test_failed(error, 'rainfall_runoff_demo executable failed with exit status: ' &
+                          //trim(adjustl(char(exit_status))))
+         return
+      end if
+   end subroutine run_rainfall_runoff_executable
+
    subroutine test_characterization_test(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -38,7 +99,12 @@ contains
 
       class(optional_error_t), allocatable :: file_deleted
 
-      file_deleted = delete_file_if_exists('output.csv')
+      ! Initialize paths if not already set
+      if (.not. allocated(output_file_path)) then
+         call setup_test_paths()
+      end if
+
+      file_deleted = delete_file_if_exists(output_file_path)
       call check_no_error(error, file_deleted)
 
       ! Previously used input
@@ -51,7 +117,7 @@ contains
                             string_t('05-10-2025,60,-5'), &
                             string_t('06-10-2025,10,-10')])
 
-      call write_input_csv(error, 'input.csv', input)
+      call write_input_csv(error, input_file_path, input)
       if (allocated(error)) then
          return
       end if
@@ -67,13 +133,17 @@ contains
                                string_t('06-10-2025,10.000,-10.000,.000,.000,10.000,150.000') &
                                ])
 
-      ! TODO now run the rainfall_runoff simulation
+      ! Run the rainfall_runoff simulation
+      call run_rainfall_runoff_executable(error)
+      if (allocated(error)) then
+         return
+      end if
 
-      ! TODO remove the call to skip_test to compare the output
-      call skip_test(error, 'TODO complete the rainfall runoff characterization test')
-      return
+      call check_output(error, output_file_path, expected)
 
-      call check_output(error, 'output.csv', expected)
+      ! Cleanup: Remove test files
+      file_deleted = delete_file_if_exists(input_file_path)
+      file_deleted = delete_file_if_exists(output_file_path)
    end subroutine test_characterization_test
 
    subroutine write_input_csv(error, path, lines)

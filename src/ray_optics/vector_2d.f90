@@ -8,9 +8,9 @@ module ray_optics_vector_2d
 
    !! Create ray data type
    type :: ray_t
-      real(dp) :: x
+      real(dp) :: x0
+      real(dp) :: y0
       real(dp) :: dx
-      real(dp) :: y
       real(dp) :: dy
    end type ray_t
 contains

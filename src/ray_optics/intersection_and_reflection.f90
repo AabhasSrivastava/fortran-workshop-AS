@@ -5,7 +5,8 @@ module ray_optics_intersection_and_reflection
    implicit none(type, external)
 
    private
-   public :: ray_segment_intersection
+   public :: ray_t_segment_intersection
+
    public :: ray_circle_intersection
    public :: apply_surface_material
 
@@ -30,28 +31,23 @@ contains
       n = sqrt(ax*ax + ay*ay)
    end function norm
 
-   pure function ray_type_segment_intersection( &
+   ! Ray vs. line segment intersection
+   ! Ray: P(t) = (x0, y0) + t*(dx, dy), t in [tmin, tmax]
+   ! Segment: A(x1, y1) -> B(x2, y2)
+   ! Returns hit parameter t; returns -1 if no hit.
+   pure function ray_t_segment_intersection( &
       ray_0, x1, y1, x2, y2, tmin, tmax, eps) result(t)
       type(ray_t), intent(in) :: ray_0
       real(dp), intent(in) :: x1, y1, x2, y2
       real(dp), intent(in) :: tmin, tmax, eps
       real(dp) :: t
-
-      t = ray_segment_intersection(ray_0%x0, ray_0%y0, ray_0%dx, ray_0%dy, &
-                                   x1, y1, x2, y2, tmin, tmax, eps)
-   end function ray_type_segment_intersection
-
-   ! Ray vs. line segment intersection
-   ! Ray: P(t) = (x0, y0) + t*(dx, dy), t in [tmin, tmax]
-   ! Segment: A(x1, y1) -> B(x2, y2)
-   ! Returns hit parameter t; returns -1 if no hit.
-   pure function ray_segment_intersection( &
-      x0, y0, dx, dy, x1, y1, x2, y2, tmin, tmax, eps) result(t)
-      real(dp), intent(in) :: x0, y0, dx, dy
-      real(dp), intent(in) :: x1, y1, x2, y2
-      real(dp), intent(in) :: tmin, tmax, eps
-      real(dp) :: t
+      real(dp) :: x0, y0, dx, dy
       real(dp) :: rx, ry, apx, apy, denom, t_candidate, u
+
+      x0 = ray_0%x0
+      y0 = ray_0%y0
+      dx = ray_0%dx
+      dy = ray_0%dy
 
       rx = x2 - x1
       ry = y2 - y1
@@ -69,7 +65,7 @@ contains
       else
          t = -1.0_dp
       end if
-   end function ray_segment_intersection
+   end function ray_t_segment_intersection
 
    ! Ray vs. circle intersection
    ! Circle centered at (cx, cy) with radius r
